@@ -15,7 +15,7 @@ import '@openzeppelin/hardhat-upgrades'
 // Normalize deployer private key for external networks; only use when valid
 const rawKey = process.env.DEPLOYER_PRIVATE_KEY?.trim()
 const normalizedKey = rawKey ? (rawKey.startsWith('0x') ? rawKey : `0x${rawKey}`) : undefined
-const celoAccounts = normalizedKey && normalizedKey.length === 66 ? [normalizedKey] : undefined
+const hyperEvmAccounts = normalizedKey && normalizedKey.length === 66 ? [normalizedKey] : undefined
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
@@ -48,25 +48,14 @@ const config: HardhatUserConfig = {
       live: false,
       saveDeployments: true
     },
-    celo_testnet: {
-      url: 'https://alfajores-forno.celo-testnet.org',
-      accounts: celoAccounts,
+    hyperEvm_mainnet: {
+      url: process.env.HYPEEVM_RPC || '',
+      accounts: hyperEvmAccounts,
       gasMultiplier: 1.2,
       verify: {
         etherscan: {
           apiUrl: '',
-          apiKey: process.env.CELO_API_KEY
-        }
-      }
-    },
-    celo_mainnet: {
-      url: 'https://forno.celo.org',
-      accounts: celoAccounts,
-      gasMultiplier: 1.2,
-      verify: {
-        etherscan: {
-          apiUrl: '',
-          apiKey: process.env.CELO_API_KEY
+          apiKey: process.env.HYPEREVM_API_KEY
         }
       }
     }
@@ -88,24 +77,15 @@ const config: HardhatUserConfig = {
 
   etherscan: {
     apiKey: {
-      celo_testnet: process.env.CELO_API_KEY || '',
-      celo_mainnet: process.env.CELO_API_KEY || ''
+      hyperEvm_mainnet: process.env.HYPEREVM_API_KEY || ''
     },
     customChains: [
       {
-        network: 'celo_testnet',
-        chainId: 44787,
+        network: 'hyperEvm_mainnet',
+        chainId: 999,
         urls: {
-          apiURL: 'https://api-alfajores.celoscan.io/api',
-          browserURL: 'https://alfajores.celoscan.io/'
-        }
-      },
-      {
-        network: 'celo_mainnet',
-        chainId: 42220,
-        urls: {
-          apiURL: 'https://api.celoscan.io/api',
-          browserURL: 'https://celoscan.io'
+          apiURL: 'https://api.hyperevmscan.io/api',
+          browserURL: 'https://hyperevmscan.io'
         }
       }
     ]
@@ -117,7 +97,7 @@ const config: HardhatUserConfig = {
     },
     proxyAdmin: {
       default: 1,
-      999: ''
+      999: process.env.PROXY_ADMIN || ''
     }
   }
 }
