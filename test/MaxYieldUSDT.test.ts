@@ -11,12 +11,24 @@ describe('MaxYieldUSDT', function () {
     const usdt = await MockERC20.deploy('Tether USD', 'USDT', 6)
     await usdt.waitForDeployment()
 
+    const MockHypurrfiAToken = await ethers.getContractFactory('MockERC20')
+    const hypurrfiAToken = await MockHypurrfiAToken.deploy('Hypurrfi A Token', 'HYPURRFI', 18)
+    await hypurrfiAToken.waitForDeployment()
+
+    const MockHyperlendAToken = await ethers.getContractFactory('MockERC20')
+    const hyperlendAToken = await MockHyperlendAToken.deploy('Hyperlend A Token', 'HYPERLEND', 18)
+    await hyperlendAToken.waitForDeployment()
+
     const MockPool = await ethers.getContractFactory('MockPool')
-    const hypurrfiPool = await MockPool.deploy()
+    const hypurrfiPool = await MockPool.deploy(await hypurrfiAToken.getAddress())
     await hypurrfiPool.waitForDeployment()
 
-    const hyperlendPool = await MockPool.deploy()
+    const hyperlendPool = await MockPool.deploy(await hyperlendAToken.getAddress())
     await hyperlendPool.waitForDeployment()
+
+    // transfer owner for pool
+    await hyperlendAToken.transferOwnership(await hyperlendPool.getAddress())
+    await hypurrfiAToken.transferOwnership(await hypurrfiPool.getAddress())
 
     // Deploy MaxYieldUSDT contract
     const MaxYieldUSDT = await ethers.getContractFactory('MaxYieldUSDT')
@@ -24,13 +36,17 @@ describe('MaxYieldUSDT', function () {
       await owner.getAddress(),
       await hypurrfiPool.getAddress(),
       await hyperlendPool.getAddress(),
-      await usdt.getAddress()
+      await usdt.getAddress(),
+      await hypurrfiAToken.getAddress(),
+      await hyperlendAToken.getAddress()
     )
     await maxYieldUSDT.waitForDeployment()
 
     return {
       maxYieldUSDT,
       usdt,
+      hypurrfiAToken,
+      hyperlendAToken,
       hypurrfiPool,
       hyperlendPool,
       owner,
@@ -41,12 +57,22 @@ describe('MaxYieldUSDT', function () {
 
   describe('Deployment', function () {
     it('Should deploy with correct initial values', async function () {
-      const { maxYieldUSDT, usdt, hypurrfiPool, hyperlendPool, owner } = await deployMaxYieldUSDT()
+      const {
+        maxYieldUSDT,
+        usdt,
+        hypurrfiPool,
+        hyperlendPool,
+        owner,
+        hypurrfiAToken,
+        hyperlendAToken
+      } = await deployMaxYieldUSDT()
 
       expect(await maxYieldUSDT.owner()).to.equal(await owner.getAddress())
       expect(await maxYieldUSDT.hypurrfiPool()).to.equal(await hypurrfiPool.getAddress())
       expect(await maxYieldUSDT.hyperlendPool()).to.equal(await hyperlendPool.getAddress())
       expect(await maxYieldUSDT.usdt()).to.equal(await usdt.getAddress())
+      expect(await maxYieldUSDT.hypurrfiAToken()).to.equal(await hypurrfiAToken.getAddress())
+      expect(await maxYieldUSDT.hyperlendAToken()).to.equal(await hyperlendAToken.getAddress())
     })
 
     it('Should revert if hypurrfiPool is zero address', async function () {
@@ -55,8 +81,16 @@ describe('MaxYieldUSDT', function () {
       const usdt = await MockERC20.deploy('Tether USD', 'USDT', 6)
       await usdt.waitForDeployment()
 
+      const MockHyperlendAToken = await ethers.getContractFactory('MockERC20')
+      const hyperlendAToken = await MockHyperlendAToken.deploy('Hyperlend A Token', 'HYPERLEND', 18)
+      await hyperlendAToken.waitForDeployment()
+
+      const MockHypurrfiAToken = await ethers.getContractFactory('MockERC20')
+      const hypurrfiAToken = await MockHypurrfiAToken.deploy('Hypurrfi A Token', 'HYPURRFI', 18)
+      await hypurrfiAToken.waitForDeployment()
+
       const MockPool = await ethers.getContractFactory('MockPool')
-      const hyperlendPool = await MockPool.deploy()
+      const hyperlendPool = await MockPool.deploy(await hyperlendAToken.getAddress())
       await hyperlendPool.waitForDeployment()
 
       const MaxYieldUSDT = await ethers.getContractFactory('MaxYieldUSDT')
@@ -66,7 +100,9 @@ describe('MaxYieldUSDT', function () {
           await owner.getAddress(),
           ethers.ZeroAddress, // hypurrfiPool
           await hyperlendPool.getAddress(),
-          await usdt.getAddress()
+          await usdt.getAddress(),
+          await hypurrfiAToken.getAddress(),
+          await hyperlendAToken.getAddress()
         )
       ).to.be.revertedWithCustomError(MaxYieldUSDT, 'InvalidAddress')
     })
@@ -77,8 +113,16 @@ describe('MaxYieldUSDT', function () {
       const usdt = await MockERC20.deploy('Tether USD', 'USDT', 6)
       await usdt.waitForDeployment()
 
+      const MockHyperlendAToken = await ethers.getContractFactory('MockERC20')
+      const hyperlendAToken = await MockHyperlendAToken.deploy('Hyperlend A Token', 'HYPERLEND', 18)
+      await hyperlendAToken.waitForDeployment()
+
+      const MockHypurrfiAToken = await ethers.getContractFactory('MockERC20')
+      const hypurrfiAToken = await MockHypurrfiAToken.deploy('Hypurrfi A Token', 'HYPURRFI', 18)
+      await hypurrfiAToken.waitForDeployment()
+
       const MockPool = await ethers.getContractFactory('MockPool')
-      const hypurrfiPool = await MockPool.deploy()
+      const hypurrfiPool = await MockPool.deploy(await hypurrfiAToken.getAddress())
       await hypurrfiPool.waitForDeployment()
 
       const MaxYieldUSDT = await ethers.getContractFactory('MaxYieldUSDT')
@@ -88,18 +132,32 @@ describe('MaxYieldUSDT', function () {
           await owner.getAddress(),
           await hypurrfiPool.getAddress(),
           ethers.ZeroAddress, // hyperlendPool
-          await usdt.getAddress()
+          await usdt.getAddress(),
+          await hypurrfiAToken.getAddress(),
+          await hyperlendAToken.getAddress()
         )
       ).to.be.revertedWithCustomError(MaxYieldUSDT, 'InvalidAddress')
     })
 
     it('Should revert if usdt is zero address', async function () {
       const [owner] = await ethers.getSigners()
+      const MockERC20 = await ethers.getContractFactory('MockERC20')
+      const usdt = await MockERC20.deploy('Tether USD', 'USDT', 6)
+      await usdt.waitForDeployment()
+
+      const MockHyperlendAToken = await ethers.getContractFactory('MockERC20')
+      const hyperlendAToken = await MockHyperlendAToken.deploy('Hyperlend A Token', 'HYPERLEND', 18)
+      await hyperlendAToken.waitForDeployment()
+
+      const MockHypurrfiAToken = await ethers.getContractFactory('MockERC20')
+      const hypurrfiAToken = await MockHypurrfiAToken.deploy('Hypurrfi A Token', 'HYPURRFI', 18)
+      await hypurrfiAToken.waitForDeployment()
+
       const MockPool = await ethers.getContractFactory('MockPool')
-      const hypurrfiPool = await MockPool.deploy()
+      const hypurrfiPool = await MockPool.deploy(await hypurrfiAToken.getAddress())
       await hypurrfiPool.waitForDeployment()
 
-      const hyperlendPool = await MockPool.deploy()
+      const hyperlendPool = await MockPool.deploy(await hyperlendAToken.getAddress())
       await hyperlendPool.waitForDeployment()
 
       const MaxYieldUSDT = await ethers.getContractFactory('MaxYieldUSDT')
@@ -109,7 +167,9 @@ describe('MaxYieldUSDT', function () {
           await owner.getAddress(),
           await hypurrfiPool.getAddress(),
           await hyperlendPool.getAddress(),
-          ethers.ZeroAddress // usdt
+          ethers.ZeroAddress, // usdt
+          await hypurrfiAToken.getAddress(),
+          await hyperlendAToken.getAddress()
         )
       ).to.be.revertedWithCustomError(MaxYieldUSDT, 'InvalidAddress')
     })
@@ -146,6 +206,13 @@ describe('MaxYieldUSDT', function () {
       const { maxYieldUSDT, owner, hypurrfiPool } = await deployMaxYieldUSDT()
 
       const MockERC20 = await ethers.getContractFactory('MockERC20')
+      const usdt = await MockERC20.deploy('Tether USD', 'USDT', 6)
+      await usdt.waitForDeployment()
+
+      const MockHypurrfiAToken = await ethers.getContractFactory('MockERC20')
+      const hypurrfiAToken = await MockHypurrfiAToken.deploy('Hypurrfi A Token', 'HYPURRFI', 18)
+      await hypurrfiAToken.waitForDeployment()
+
       const otherToken = await MockERC20.deploy('Other Token', 'OTHER', 18)
       await otherToken.waitForDeployment()
 
@@ -185,17 +252,43 @@ describe('MaxYieldUSDT', function () {
 
   describe('HypurrfiWithdrawUSDT Action', function () {
     it('Should execute HypurrfiWithdrawUSDT successfully', async function () {
-      const { maxYieldUSDT, usdt, hypurrfiPool, owner } = await deployMaxYieldUSDT()
+      const { maxYieldUSDT, usdt, hypurrfiPool, owner, hypurrfiAToken, hyperlendAToken } =
+        await deployMaxYieldUSDT()
 
       const amount = parseUnits('1000', 6)
 
-      await usdt.mint(await hypurrfiPool.getAddress(), amount)
+      await usdt.mint(owner.address, amount)
+
+      // Approve the pool to spend USDT
+      await (await usdt.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)).wait()
+
+      const supplyData = hypurrfiPool.interface.encodeFunctionData('supply', [
+        await usdt.getAddress(),
+        amount,
+        await owner.getAddress(),
+        '0'
+      ])
+
+      await (await maxYieldUSDT.connect(owner).execute(0, supplyData)).wait() // Action.HypurrfiSupplyUSDT
+
+      const aTokenBalance = await hypurrfiAToken.balanceOf(owner.address)
+
+      console.log({ aTokenBalance })
 
       const data = hypurrfiPool.interface.encodeFunctionData('withdraw', [
         await usdt.getAddress(),
         amount,
         await owner.getAddress()
       ])
+
+      // approve atoken for strategy contract
+      await hypurrfiAToken.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
+
+      const aTokenApproval = await hypurrfiAToken
+        .connect(owner)
+        .allowance(await owner.getAddress(), await maxYieldUSDT.getAddress())
+
+      console.log({ aTokenApproval })
 
       await expect(
         maxYieldUSDT.connect(owner).execute(1, data) // Action.HypurrfiWithdrawUSDT
@@ -243,7 +336,8 @@ describe('MaxYieldUSDT', function () {
 
   describe('HyperlendSupplyUSDT Action', function () {
     it('Should execute HyperlendSupplyUSDT successfully', async function () {
-      const { maxYieldUSDT, usdt, hyperlendPool, owner } = await deployMaxYieldUSDT()
+      const { maxYieldUSDT, usdt, hyperlendPool, owner, hyperlendAToken } =
+        await deployMaxYieldUSDT()
 
       const amount = parseUnits('1000', 6)
       const referralCode = 456
@@ -253,6 +347,7 @@ describe('MaxYieldUSDT', function () {
 
       // Approve the pool to spend USDT
       await usdt.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
+      await hyperlendAToken.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
 
       const data = hyperlendPool.interface.encodeFunctionData('supply', [
         await usdt.getAddress(),
@@ -311,17 +406,32 @@ describe('MaxYieldUSDT', function () {
 
   describe('HyperlendWithdrawUSDT Action', function () {
     it('Should execute HyperlendWithdrawUSDT successfully', async function () {
-      const { maxYieldUSDT, usdt, owner, hyperlendPool } = await deployMaxYieldUSDT()
+      const { maxYieldUSDT, usdt, owner, hyperlendPool, hyperlendAToken } =
+        await deployMaxYieldUSDT()
 
       const amount = parseUnits('1000', 6)
 
-      await usdt.mint(await hyperlendPool.getAddress(), amount)
+      await usdt.mint(owner.address, amount)
+
+      // Approve the pool to spend USDT
+      await (await usdt.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)).wait()
+
+      const supplyData = hyperlendPool.interface.encodeFunctionData('supply', [
+        await usdt.getAddress(),
+        amount,
+        await owner.getAddress(),
+        '0'
+      ])
+
+      await (await maxYieldUSDT.connect(owner).execute(2, supplyData)).wait() // Action.HypurrfiSupplyUSDT
 
       const data = hyperlendPool.interface.encodeFunctionData('withdraw', [
         await usdt.getAddress(),
         amount,
         await owner.getAddress()
       ])
+
+      await hyperlendAToken.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
 
       await expect(
         maxYieldUSDT.connect(owner).execute(3, data) // Action.HyperlendWithdrawUSDT
@@ -411,12 +521,14 @@ describe('MaxYieldUSDT', function () {
     })
 
     it('Should not allow execution when paused', async function () {
-      const { maxYieldUSDT, usdt, owner, hypurrfiPool } = await deployMaxYieldUSDT()
+      const { maxYieldUSDT, usdt, owner, hypurrfiPool, hypurrfiAToken } = await deployMaxYieldUSDT()
 
       const amount = parseUnits('1000', 6)
       await usdt.mint(await hypurrfiPool.getAddress(), amount)
 
       await usdt.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
+
+      await hypurrfiAToken.connect(owner).approve(await maxYieldUSDT.getAddress(), amount)
 
       await maxYieldUSDT.connect(owner).pause()
 

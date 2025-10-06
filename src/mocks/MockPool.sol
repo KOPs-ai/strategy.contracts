@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Burnable} from "../interfaces/IERC20Burnable.sol";
 
 contract MockPool {
+    address aTokenAddress;
+    constructor(address _aTokenAddress) {
+        aTokenAddress = _aTokenAddress;
+    }
     // Simplified mock - doesn't implement full IPool interface
     // Just provides the methods that MaxYieldUSDT actually calls
 
@@ -30,14 +34,17 @@ contract MockPool {
     ) external {
         // Mock implementation - just emit the event
         // transfer asset to this contract
-        IERC20(asset).transferFrom(msg.sender, address(this), amount);
+        IERC20Burnable(asset).transferFrom(msg.sender, address(this), amount);
+        // mint A token
+        IERC20Burnable(aTokenAddress).mint(onBehalfOf, amount);
         emit Supply(asset, msg.sender, onBehalfOf, amount, referralCode);
     }
 
     function withdraw(address asset, uint256 amount, address to) external returns (uint256) {
         // Mock implementation - just emit the event
         // transfer asset to to
-        IERC20(asset).transfer(to, amount);
+        IERC20Burnable(aTokenAddress).burnFrom(msg.sender, amount);
+        IERC20Burnable(asset).transfer(to, amount);
         emit Withdraw(asset, msg.sender, to, amount);
         return amount;
     }

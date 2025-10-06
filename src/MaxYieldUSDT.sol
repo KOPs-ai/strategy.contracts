@@ -4,13 +4,16 @@ pragma solidity ^0.8.27;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IPool} from "./interfaces/IPool.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Burnable} from "./interfaces/IERC20Burnable.sol";
 import {console} from "hardhat/console.sol";
 
 contract MaxYieldUSDT is Pausable, Ownable {
     IPool public immutable hypurrfiPool;
     IPool public immutable hyperlendPool;
-    IERC20 public immutable usdt;
+    IERC20Burnable public immutable usdt;
+
+    IERC20Burnable public immutable hypurrfiAToken;
+    IERC20Burnable public immutable hyperlendAToken;
 
     error InvalidAddress();
     error TokenNotAllowed();
@@ -36,18 +39,24 @@ contract MaxYieldUSDT is Pausable, Ownable {
         address initialOwner,
         address initHypurrfiPool,
         address initHyperlendPool,
-        address initUsdtAddress
+        address initUsdtAddress,
+        address initHypurrfiAToken,
+        address initHyperlendAToken
     ) Ownable(initialOwner) {
         if (
             initHypurrfiPool == address(0) ||
             initHyperlendPool == address(0) ||
-            initUsdtAddress == address(0)
+            initUsdtAddress == address(0) ||
+            initHypurrfiAToken == address(0) ||
+            initHyperlendAToken == address(0)
         ) {
             revert InvalidAddress();
         }
         hypurrfiPool = IPool(initHypurrfiPool);
         hyperlendPool = IPool(initHyperlendPool);
-        usdt = IERC20(initUsdtAddress);
+        usdt = IERC20Burnable(initUsdtAddress);
+        hypurrfiAToken = IERC20Burnable(initHypurrfiAToken);
+        hyperlendAToken = IERC20Burnable(initHyperlendAToken);
     }
 
     enum Action {
@@ -100,6 +109,7 @@ contract MaxYieldUSDT is Pausable, Ownable {
         if (to != msg.sender) {
             revert NotOwner();
         }
+        hypurrfiAToken.transferFrom(msg.sender, address(this), amount);
         hypurrfiPool.withdraw(asset, amount, to);
         emit HypurrfiWithdrawUSDT(asset, amount, to);
     }
@@ -135,6 +145,8 @@ contract MaxYieldUSDT is Pausable, Ownable {
         if (to != msg.sender) {
             revert NotOwner();
         }
+
+        hyperlendAToken.transferFrom(msg.sender, address(this), amount);
         hyperlendPool.withdraw(asset, amount, to);
         emit HyperlendWithdrawUSDT(asset, amount, to);
     }
@@ -148,6 +160,6 @@ contract MaxYieldUSDT is Pausable, Ownable {
     }
 
     function withdrawERC20(address token, address to, uint256 amount) public onlyOwner {
-        IERC20(token).transfer(to, amount);
+        IERC20Burnable(token).transfer(to, amount);
     }
 }
