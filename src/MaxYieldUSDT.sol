@@ -5,9 +5,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IPool} from "./interfaces/IPool.sol";
 import {IERC20Burnable} from "./interfaces/IERC20Burnable.sol";
-import {console} from "hardhat/console.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract MaxYieldUSDT is Pausable, Ownable {
+    using SafeERC20 for IERC20Burnable;
     IPool public immutable hypurrfiPool;
     IPool public immutable hyperlendPool;
     IERC20Burnable public immutable usdt;
@@ -91,9 +92,9 @@ contract MaxYieldUSDT is Pausable, Ownable {
         if (onBehalfOf != msg.sender) {
             revert NotOwner();
         }
-        usdt.transferFrom(msg.sender, address(this), amount);
+        usdt.safeTransferFrom(msg.sender, address(this), amount);
         //approve the pool to spend the USDT
-        usdt.approve(address(hypurrfiPool), amount);
+        usdt.safeIncreaseAllowance(address(hypurrfiPool), amount);
         hypurrfiPool.supply(asset, amount, onBehalfOf, referralCode);
         emit HypurrfiSupplyUSDT(asset, amount, onBehalfOf, referralCode);
     }
@@ -109,7 +110,7 @@ contract MaxYieldUSDT is Pausable, Ownable {
         if (to != msg.sender) {
             revert NotOwner();
         }
-        hypurrfiAToken.transferFrom(msg.sender, address(this), amount);
+        hypurrfiAToken.safeTransferFrom(msg.sender, address(this), amount);
         hypurrfiPool.withdraw(asset, amount, to);
         emit HypurrfiWithdrawUSDT(asset, amount, to);
     }
@@ -125,10 +126,10 @@ contract MaxYieldUSDT is Pausable, Ownable {
         if (onBehalfOf != msg.sender) {
             revert NotOwner();
         }
-        usdt.transferFrom(msg.sender, address(this), amount);
+        usdt.safeTransferFrom(msg.sender, address(this), amount);
 
         //approve the pool to spend the USDT
-        usdt.approve(address(hyperlendPool), amount);
+        usdt.safeIncreaseAllowance(address(hyperlendPool), amount);
         hyperlendPool.supply(asset, amount, onBehalfOf, referralCode);
         emit HyperlendSupplyUSDT(asset, amount, onBehalfOf, referralCode);
     }
@@ -146,7 +147,7 @@ contract MaxYieldUSDT is Pausable, Ownable {
             revert NotOwner();
         }
 
-        hyperlendAToken.transferFrom(msg.sender, address(this), amount);
+        hyperlendAToken.safeTransferFrom(msg.sender, address(this), amount);
         hyperlendPool.withdraw(asset, amount, to);
         emit HyperlendWithdrawUSDT(asset, amount, to);
     }
@@ -160,6 +161,6 @@ contract MaxYieldUSDT is Pausable, Ownable {
     }
 
     function withdrawERC20(address token, address to, uint256 amount) public onlyOwner {
-        IERC20Burnable(token).transfer(to, amount);
+        IERC20Burnable(token).safeTransfer(to, amount);
     }
 }
