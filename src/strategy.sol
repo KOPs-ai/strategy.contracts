@@ -6,8 +6,10 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Strategy is Initializable, PausableUpgradeable, AccessControlUpgradeable {
+    using SafeERC20 for IERC20;
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     struct ActionParamRole {
@@ -155,7 +157,7 @@ contract Strategy is Initializable, PausableUpgradeable, AccessControlUpgradeabl
         address to,
         uint256 amount
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        IERC20(token).transfer(to, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 
     function withdrawETH(address to, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
